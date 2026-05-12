@@ -1,0 +1,287 @@
+
+---------------------------------------------------------
+-- TABLE : Abonnement
+---------------------------------------------------------
+CREATE TABLE Abonnement (
+    idAbonnement INT IDENTITY(1,1) PRIMARY KEY,
+    NomAbonnement VARCHAR(50),
+    Prix DECIMAL(15,2),
+    DureeEnJours DATE
+);
+
+---------------------------------------------------------
+-- TABLE : Personne
+---------------------------------------------------------
+CREATE TABLE Personne (
+    idPersonne INT IDENTITY(1,1) PRIMARY KEY,
+    Nom VARCHAR(50),
+    Prenom VARCHAR(50),
+    Email VARCHAR(50),
+    Telephone INT,
+    MotDePasse VARCHAR(50),
+    Adresse VARCHAR(50),
+    idAbonnement INT NULL,
+    FOREIGN KEY (idAbonnement) REFERENCES Abonnement(idAbonnement)
+);
+
+---------------------------------------------------------
+-- TABLE : Role
+---------------------------------------------------------
+CREATE TABLE Role (
+    idRole INT IDENTITY(1,1) PRIMARY KEY,
+    NomRole VARCHAR(50),
+    idPersonne INT NOT NULL,
+    FOREIGN KEY (idPersonne) REFERENCES Personne(idPersonne)
+);
+
+---------------------------------------------------------
+-- TABLE : PersonneAudit
+---------------------------------------------------------
+CREATE TABLE PersonneAudit (
+    idAuditId INT IDENTITY(1,1) PRIMARY KEY,
+    ActionType VARCHAR(50),
+    OldNom VARCHAR(50),
+    OldPrenom VARCHAR(50),
+    OldEmail VARCHAR(50),
+    OldTelephone INT,
+    OldAdresse VARCHAR(50),
+    NewNom VARCHAR(50),
+    NewPrenom VARCHAR(50),
+    NewEmail VARCHAR(50),
+    NewTelephone INT,
+    ActionDate DATE,
+    NewAdresse VARCHAR(50),
+    idPersonne INT NULL,
+    FOREIGN KEY (idPersonne) REFERENCES Personne(idPersonne)
+);
+
+---------------------------------------------------------
+-- TABLE : Commande
+---------------------------------------------------------
+CREATE TABLE Commande (
+    idCommande INT IDENTITY(1,1) PRIMARY KEY,
+    Quantité INT,
+    idPersonne INT NOT NULL,
+    FOREIGN KEY (idPersonne) REFERENCES Personne(idPersonne)
+);
+
+---------------------------------------------------------
+-- TABLE : Article
+---------------------------------------------------------
+CREATE TABLE Article (
+    idArticle INT IDENTITY(1,1) PRIMARY KEY,
+    Nom_Article VARCHAR(50),
+    Prix DECIMAL(15,2),
+    Description VARCHAR(500),
+    idCommande INT NOT NULL,
+    FOREIGN KEY (idCommande) REFERENCES Commande(idCommande)
+);
+
+---------------------------------------------------------
+-- TABLE : Animal
+---------------------------------------------------------
+CREATE TABLE Animal (
+    idAnimal INT IDENTITY(1,1) PRIMARY KEY,
+    Nom VARCHAR(50),
+    Age INT,
+    Sexe VARCHAR(50),
+    Espece VARCHAR(50),
+    idArticle INT NOT NULL,
+    FOREIGN KEY (idArticle) REFERENCES Article(idArticle)
+);
+
+---------------------------------------------------------
+-- TABLE : Mammifere
+---------------------------------------------------------
+CREATE TABLE Mammifere (
+    idMammifere INT IDENTITY(1,1) PRIMARY KEY,
+    Pelage VARCHAR(50),
+    GestationJours TINYINT,
+    idAnimal INT NOT NULL,
+    FOREIGN KEY (idAnimal) REFERENCES Animal(idAnimal)
+);
+
+---------------------------------------------------------
+-- TABLE : Reptile
+---------------------------------------------------------
+CREATE TABLE Reptile (
+    idReptile INT IDENTITY(1,1) PRIMARY KEY,
+    TypeEcailles VARCHAR(50),
+    EstVenimeux BIT,
+    idAnimal INT NOT NULL,
+    FOREIGN KEY (idAnimal) REFERENCES Animal(idAnimal)
+);
+
+---------------------------------------------------------
+-- TABLE : Oiseau
+---------------------------------------------------------
+CREATE TABLE Oiseau (
+    idOiseau INT IDENTITY(1,1) PRIMARY KEY,
+    Envergure DECIMAL(15,2),
+    PeutVoler VARCHAR(50),
+    idAnimal INT NOT NULL,
+    FOREIGN KEY (idAnimal) REFERENCES Animal(idAnimal)
+);
+GO
+
+---------------------------------------------------------
+-- INSERTS DE BASE
+---------------------------------------------------------
+
+-- Abonnements
+INSERT INTO Abonnement (NomAbonnement, Prix, DureeEnJours)
+VALUES 
+('Basic', 9.99, '2026-01-01'),
+('Premium', 19.99, '2026-01-01');
+
+-- Personnes
+INSERT INTO Personne (Nom, Prenom, Email, Telephone, MotDePasse, Adresse, idAbonnement)
+VALUES
+('Martin', 'Alex', 'alex@mail.com', 612345678, 'pass123', 'Nîmes', 1),   -- idPersonne = 1
+('Durand', 'Sophie', 'sophie@mail.com', 623456789, 'pass456', 'Montpellier', 2), -- idPersonne = 2
+('Petit', 'Lucas', 'lucas@mail.com', 634567890, 'pass789', 'Avignon', NULL);     -- idPersonne = 3
+
+-- Rôles (Admin + User)
+INSERT INTO Role (NomRole, idPersonne) VALUES ('Admin', 1);
+INSERT INTO Role (NomRole, idPersonne) VALUES ('User', 2);
+
+-- Commandes
+INSERT INTO Commande (Quantité, idPersonne)
+VALUES
+(3, 2),  -- commande 1 pour Sophie
+(1, 3);  -- commande 2 pour Lucas
+
+-- Articles (tous liés à des commandes, mais tu peux en ajouter d'autres plus tard sans commande si tu changes le modèle)
+INSERT INTO Article (Nom_Article, Prix, Description, idCommande)
+VALUES
+('Croquettes', 12.50, 'Croquettes premium', 1),
+('Laisse', 8.90, 'Laisse en nylon', 1),
+('Gamelle', 5.00, 'Gamelle en inox', 2);
+
+-- Animaux
+INSERT INTO Animal (Nom, Age, Sexe, Espece, idArticle)
+VALUES
+('Rex', 5, 'Mâle', 'Chien', 1),
+('Mina', 2, 'Femelle', 'Chat', 2),
+('Kiko', 1, 'Mâle', 'Perroquet', 3);
+
+-- Mammifères
+INSERT INTO Mammifere (Pelage, GestationJours, idAnimal)
+VALUES
+('Court', 60, 1),
+('Long', 65, 2);
+
+-- Reptile
+INSERT INTO Reptile (TypeEcailles, EstVenimeux, idAnimal)
+VALUES
+('Lisses', 0, 1);
+
+-- Oiseau
+INSERT INTO Oiseau (Envergure, PeutVoler, idAnimal)
+VALUES
+(0.45, 'Oui', 3);
+GO
+
+---------------------------------------------------------
+-- PROCEDURES STOCKÉES
+---------------------------------------------------------
+
+-- Créer une personne
+CREATE PROCEDURE CreatePersonne
+    @Nom VARCHAR(50),
+    @Prenom VARCHAR(50),
+    @Email VARCHAR(50),
+    @Telephone INT,
+    @MotDePasse VARCHAR(50),
+    @Adresse VARCHAR(50),
+    @idAbonnement INT = NULL
+AS
+BEGIN
+    INSERT INTO Personne (Nom, Prenom, Email, Telephone, MotDePasse, Adresse, idAbonnement)
+    VALUES (@Nom, @Prenom, @Email, @Telephone, @MotDePasse, @Adresse, @idAbonnement);
+
+    SELECT SCOPE_IDENTITY() AS NewPersonneId;
+END;
+GO
+
+-- Créer un animal
+CREATE PROCEDURE CreateAnimal
+    @Nom VARCHAR(50),
+    @Age INT,
+    @Sexe VARCHAR(50),
+    @Espece VARCHAR(50),
+    @idArticle INT
+AS
+BEGIN
+    INSERT INTO Animal (Nom, Age, Sexe, Espece, idArticle)
+    VALUES (@Nom, @Age, @Sexe, @Espece, @idArticle);
+
+    SELECT SCOPE_IDENTITY() AS NewAnimalId;
+END;
+GO
+
+-- Supprimer une personne
+CREATE PROCEDURE DeletePersonne
+    @idPersonne INT
+AS
+BEGIN
+    DELETE FROM Personne WHERE idPersonne = @idPersonne;
+END;
+GO
+
+---------------------------------------------------------
+-- TRIGGERS
+---------------------------------------------------------
+
+-- Audit des modifications de Personne
+CREATE TRIGGER TRG_Personne_Audit
+ON Personne
+FOR UPDATE
+AS
+BEGIN
+    INSERT INTO PersonneAudit (
+        ActionType, OldNom, OldPrenom, OldEmail, OldTelephone, OldAdresse,
+        NewNom, NewPrenom, NewEmail, NewTelephone, NewAdresse, ActionDate, idPersonne
+    )
+    SELECT
+        'UPDATE',
+        d.Nom, d.Prenom, d.Email, d.Telephone, d.Adresse,
+        i.Nom, i.Prenom, i.Email, i.Telephone, i.Adresse,
+        CONVERT(DATE, GETDATE()),
+        d.idPersonne
+    FROM deleted d
+    JOIN inserted i ON d.idPersonne = i.idPersonne;
+END;
+GO
+
+-- Empêcher la suppression d’un abonnement utilisé
+CREATE TRIGGER TRG_NoDeleteAbonnement
+ON Abonnement
+INSTEAD OF DELETE
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM Personne WHERE idAbonnement IN (SELECT idAbonnement FROM deleted))
+    BEGIN
+        RAISERROR('Impossible de supprimer un abonnement utilisé.', 16, 1);
+        RETURN;
+    END
+
+    DELETE FROM Abonnement WHERE idAbonnement IN (SELECT idAbonnement FROM deleted);
+END;
+GO
+
+-- Empêcher la suppression d’un article lié à un animal
+CREATE TRIGGER TRG_NoDeleteArticle
+ON Article
+INSTEAD OF DELETE
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM Animal WHERE idArticle IN (SELECT idArticle FROM deleted))
+    BEGIN
+        RAISERROR('Impossible de supprimer un article lié à un animal.', 16, 1);
+        RETURN;
+    END
+
+    DELETE FROM Article WHERE idArticle IN (SELECT idArticle FROM deleted);
+END;
+GO
